@@ -46,8 +46,7 @@ transform = A.Compose(
     [
         A.RandomCrop(sz_outer, sz_outer),
         A.Rotate(limit=[-5, 5], p=1),
-        A.HorizontalFlip(p=0.5),
-        A.VerticallFlip(p=0.5),
+        A.Flip(p=0.5),
         A.CenterCrop(sz, sz),        
     ]
 )
