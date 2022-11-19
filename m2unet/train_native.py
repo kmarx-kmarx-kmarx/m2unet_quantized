@@ -7,8 +7,11 @@ import albumentations as A
 from skimage.filters import threshold_otsu
 from skimage.measure import label
 # Uncomment to specify the gpu number
-# os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 import torch
+
+TRAIN = True
+TEST = False
 
 # a function for loading cellpose output (image, mask and outline)
 def load_samples(train_dir):
@@ -27,22 +30,25 @@ def load_samples(train_dir):
 print(f'GPU: {torch.cuda.is_available()}')
 
 # setting up
-data_dir = './data' # data should contain a train and a test folder
-model_root = "./models"
+data_dir = '../../data' # data should contain a train and a test folder
+model_root = "../models"
 epochs = 1000
 steps = 1
 resume = True
 corrid = "200"
 pretrained_model = None  # os.path.join(model_root, str(corrid), "model.h5")
 os.makedirs(os.path.join(model_root, str(corrid)), exist_ok=True)
+sz = 1024
+sz_outer = int(sz* 1.5)
 
 # define the transforms
 transform = A.Compose(
     [
-        A.RandomCrop(727, 727),
-        A.Rotate(limit=360, p=1),
-        A.HorizontalFlip(p=1),
-        A.CenterCrop(512, 512),        
+        A.RandomCrop(sz_outer, sz_outer),
+        A.Rotate(limit=[-5, 5], p=1),
+        A.HorizontalFlip(p=0.5),
+        A.VerticallFlip(p=0.5),
+        A.CenterCrop(sz, sz),        
     ]
 )
 A.save(transform, "./models/transform.json")
@@ -72,8 +78,8 @@ if TRAIN:
     iterations = 0
     for epoch in range(epochs):
         losses = []
-        # image shape: 512, 512, 3
-        # labels shape: 512, 512, 1
+        # image shape: sz, sz, 3
+        # labels shape: sz, sz, 1
         for (image, labels) in train_samples:
             mask = model.transform_labels(labels)
             x = np.expand_dims(image, axis=0)
@@ -90,9 +96,9 @@ if TRAIN:
 # test
 if TEST:
     for i, sample in enumerate(test_samples):
-        inputs = sample[0].astype("float32")[None, :512, :512, :]
+        inputs = sample[0].astype("float32")[None, :sz, :sz, :]
         imageio.imwrite(f"octopi-inputs_{i}.png", inputs[0].astype('uint8'))
-        labels = sample[1].astype("float32")[None, :512, :512, :] * 255
+        labels = sample[1].astype("float32")[None, :sz, :sz, :] * 255
         imageio.imwrite(f"octopi-labels_{i}.png", labels[0].astype('uint8'))
         results = model.predict(inputs)
         output = np.clip(results[0] * 255, 0, 255)[:, :, 0].astype('uint8')
