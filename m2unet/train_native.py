@@ -7,7 +7,7 @@ import albumentations as A
 from skimage.filters import threshold_otsu
 from skimage.measure import label
 # Uncomment to specify the gpu number
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+# os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 import torch
 
 TRAIN = True
@@ -18,7 +18,12 @@ def load_samples(train_dir):
     npy_files = [os.path.join(train_dir, s) for s in os.listdir(train_dir) if s.endswith('.npy')]
     samples = []
     for file in npy_files:
-        items = np.load(file, allow_pickle=True).item()
+        print(file)
+        try:
+            items = np.load(file, allow_pickle=True).item()
+        except:
+            print("Bad Item")
+            continue
         mask = (items['masks'][:, :, None]  > 0) * 1.0
         outline = (items['outlines'][:, :, None]  > 0) * 1.0
         mask = mask * (1.0 - outline)
