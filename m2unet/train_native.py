@@ -9,6 +9,7 @@ from skimage.measure import label
 # Uncomment to specify the gpu number
 # os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 import torch
+torch.backends.cudnn.benchmark = True
 
 TRAIN = True
 TEST = False
@@ -27,7 +28,7 @@ def load_samples(train_dir):
         mask = (items['masks'][:, :, None]  > 0) * 1.0
         outline = (items['outlines'][:, :, None]  > 0) * 1.0
         mask = mask * (1.0 - outline)
-        sample = (np.stack([items['img'],]*3, axis=2), mask)
+        sample = (items['img'], mask)
         samples.append(sample)
     return samples
 
@@ -36,23 +37,23 @@ print(f'GPU: {torch.cuda.is_available()}')
 
 # setting up
 data_dir = '../../data' # data should contain a train and a test folder
-model_root = "../models"
-epochs = 1000
+model_root = "../models_100"
+epochs = 100
 steps = 1
 resume = True
 corrid = "200"
 pretrained_model = None  # os.path.join(model_root, str(corrid), "model.h5")
 os.makedirs(os.path.join(model_root, str(corrid)), exist_ok=True)
-sz = 1024
+sz = 2048
 sz_outer = int(sz* 1.5)
 
 # define the transforms
 transform = A.Compose(
     [
-        A.RandomCrop(sz_outer, sz_outer),
-        A.Rotate(limit=[-5, 5], p=1),
+        A.RandomCrop(sz, sz),
+        #A.Rotate(limit=[-5, 5], p=1),
         A.Flip(p=0.5),
-        A.CenterCrop(sz, sz),        
+        #A.CenterCrop(sz, sz),
     ]
 )
 A.save(transform, "./models/transform.json")
