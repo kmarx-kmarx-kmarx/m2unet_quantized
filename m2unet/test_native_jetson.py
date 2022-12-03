@@ -72,9 +72,9 @@ with open(save, 'w') as f:
         imageio.imwrite(f"octopi-pred-labels_{i}.png", predict_labels)
         imageio.imwrite(f"octopi-pred-prob_{i}.png", output)
         imageio.imwrite(f"octopi-labels_{i}.png", labels[0].astype('uint8'))
-        a = np.max(label(mask))
+        a = np.max(label(labels[0]/255))
         b = np.max(predict_labels)
-        j = jaccard_sim(results[0], sample[1].astype("float32")[None, :sz, :sz, :])
+        j = jaccard_sim(results[0], labels[0]/255)
         f.write(f'{dt},{a},{b},{j}\n')
 
 print("all done")
