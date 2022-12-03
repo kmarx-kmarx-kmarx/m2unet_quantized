@@ -30,13 +30,16 @@ def load_samples(train_dir):
         mask = mask * (1.0 - outline)
         sample = (items['img'], mask)
         samples.append(sample)
+        print(len(samples))
+        if len(samples) >= 1:
+            break
     return samples
 
 # check if GPU is available
 print(f'GPU: {torch.cuda.is_available()}')
 
 # setting up
-data_dir = '../../test/072622-D8-9_2022-07-27_18-51-3.318936/0test/072622-D8-9_2022-07-27_18-51-3.318936' # data should contain a train and a test folder
+data_dir = '../../test/072622-D8-9_2022-07-27_18-51-3.318936' # data should contain a train and a test folder
 model_root = "../models_100"
 epochs = 100
 steps = 1
@@ -44,7 +47,7 @@ resume = True
 corrid = "200"
 pretrained_model = None  # os.path.join(model_root, str(corrid), "model.h5")
 os.makedirs(os.path.join(model_root, str(corrid)), exist_ok=True)
-sz = 2048
+sz = 1024
 sz_outer = int(sz* 1.5)
 
 # define the transforms
@@ -75,8 +78,8 @@ model = M2UnetInteractiveModel(
 )
 
 # load samples
-train_samples = load_samples(data_dir + '/train')
-test_samples = load_samples(data_dir + '/0')
+train_samples = load_samples(data_dir + '/0')
+test_samples = train_samples #load_samples(data_dir + '/0')
 
 # train the model 
 if TRAIN:
