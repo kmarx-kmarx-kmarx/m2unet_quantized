@@ -14,6 +14,16 @@ print(f'GPU: {torch.cuda.is_available()}')
 
 t0 = time.time()
 
+def jaccard_sim(img1, img2):
+    n = np.prod(img1.shape)
+    a = img1 * img2
+    b = img1 + img2 - a
+    J = a/b
+    J[np.isnan(J)] = 1
+    j = np.sum(J)/n
+
+    return j
+
 # setting up
 data_dir = '../../test/072622-D8-9_2022-07-27_18-51-3.318936' # data should contain a train and a test folder
 model_root = "../models_100"
@@ -33,34 +43,38 @@ model = M2UnetInteractiveModel(
 )
 
 npy_files = [os.path.join(data_dir + '/0', s) for s in os.listdir(data_dir + '/0') if s.endswith('.npy')]
-
+save = "./results.csv"
 # test
-for i, file in enumerate(npy_files):
-    t1 = time.time()
-    
-    # Load file
-    try:
-        items = np.load(file, allow_pickle=True).item()
-    except:
-        print("Bad Item")
-        continue
-    mask = (items['masks'][:, :, None]  > 0) * 1.0
-    outline = (items['outlines'][:, :, None]  > 0) * 1.0
-    mask = mask * (1.0 - outline)
-    sample = (items['img'], mask)
+with open(save, 'w') as f:
+    for i, file in enumerate(npy_files):
+        t1 = time.time()
+        
+        # Load file
+        try:
+            items = np.load(file, allow_pickle=True).item()
+        except:
+            print("Bad Item")
+            continue
+        mask = (items['masks'][:, :, None]  > 0) * 1.0
+        outline = (items['outlines'][:, :, None]  > 0) * 1.0
+        mask = mask * (1.0 - outline)
+        sample = (items['img'], mask)
 
-    inputs = sample[0].astype("float32")[None, :sz, :sz, :]
-    labels = sample[1].astype("float32")[None, :sz, :sz, :] * 255
-    imageio.imwrite(f"octopi-labels_{i}.png", labels[0].astype('uint8'))
-    results = model.predict(inputs)
-    output = np.clip(results[0] * 255, 0, 255)[:, :, 0].astype('uint8')
-    imageio.imwrite(f"octopi-pred-prob_{i}.png", output)
-    threshold = threshold_otsu(output)
-    mask = ((output > threshold) * 255).astype('uint8')
-    predict_labels = label(mask)
-    imageio.imwrite(f"octopi-pred-labels_{i}.png", predict_labels)
-
-    print(time.time()-t1)
+        inputs = sample[0].astype("float32")[None, :sz, :sz, :]
+        labels = sample[1].astype("float32")[None, :sz, :sz, :] * 255
+        results = model.predict(inputs)
+        output = np.clip(results[0] * 255, 0, 255)[:, :, 0].astype('uint8')
+        threshold = threshold_otsu(output)
+        mask = ((output > threshold) * 255).astype('uint8')
+        predict_labels = label(mask)
+        t2 = time.time()
+        dt = t2-t1
+        imageio.imwrite(f"octopi-pred-labels_{i}.png", predict_labels)
+        imageio.imwrite(f"octopi-pred-prob_{i}.png", output)
+        imageio.imwrite(f"octopi-labels_{i}.png", labels[0].astype('uint8'))
+        a = np.max(items['masks'][:, :, None])
+        b = np.max(predict_labels)
+        j = jaccard_sim(results[0], labels)
+        f.write(f'{dt},{a},{b},{j}\n')
 
 print("all done")
-print(time.time() - t0)
