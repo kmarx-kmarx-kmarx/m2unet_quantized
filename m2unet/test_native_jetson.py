@@ -74,7 +74,7 @@ with open(save, 'w') as f:
         imageio.imwrite(f"octopi-labels_{i}.png", labels[0].astype('uint8'))
         a = np.max(label(mask))
         b = np.max(predict_labels)
-        j = jaccard_sim(results[0], labels)
+        j = jaccard_sim(results[0], mask)
         f.write(f'{dt},{a},{b},{j}\n')
 
 print("all done")
