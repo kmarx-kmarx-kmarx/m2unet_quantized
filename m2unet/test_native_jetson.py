@@ -18,7 +18,7 @@ def jaccard_sim(img1, img2):
     n = np.prod(img1.shape)
     a = img1 * img2
     b = img1 + img2 - a
-    J = a/b
+    J = np.array(a/b)
     J[np.isnan(J)] = 1
     j = np.sum(J)/n
 
@@ -43,11 +43,11 @@ model = M2UnetInteractiveModel(
 )
 
 npy_files = [os.path.join(data_dir + '/0', s) for s in os.listdir(data_dir + '/0') if s.endswith('.npy')]
-save = "./results.csv"
+save = "./results1024.csv"
 # test
 with open(save, 'w') as f:
     for i, file in enumerate(npy_files):
-        t1 = time.time()
+        
         
         # Load file
         try:
@@ -62,19 +62,25 @@ with open(save, 'w') as f:
 
         inputs = sample[0].astype("float32")[None, :sz, :sz, :]
         labels = sample[1].astype("float32")[None, :sz, :sz, :] * 255
+        t1 = time.time()
         results = model.predict(inputs)
         output = np.clip(results[0] * 255, 0, 255)[:, :, 0].astype('uint8')
         threshold = threshold_otsu(output)
-        mask_new = ((output > threshold) * 255).astype('uint8')
-        predict_labels = label(mask_new)
+        mask_new = np.array(((output > threshold) * 255).astype('uint8'))
         t2 = time.time()
+        predict_labels = label(mask_new)
+        
         dt = t2-t1
         imageio.imwrite(f"octopi-pred-labels_{i}.png", predict_labels)
         imageio.imwrite(f"octopi-pred-prob_{i}.png", output)
         imageio.imwrite(f"octopi-labels_{i}.png", labels[0].astype('uint8'))
         a = np.max(label(labels[0]/255))
         b = np.max(predict_labels)
+        #print(results[0].shape)
+        #print(labels[0].shape)
         j = jaccard_sim(results[0], labels[0]/255)
-        f.write(f'{dt},{a},{b},{j}\n')
+        #print(mask_new.shape)
+        k = jaccard_sim(mask_new.astype('float')/255.0, labels[0][0].astype('float')/255.0)
+        f.write(f'{dt},{a},{b},{j},{k}\n')
 
 print("all done")
