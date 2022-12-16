@@ -33,7 +33,7 @@ resume = True
 corrid = "200"
 pretrained_model = None  # os.path.join(model_root, str(corrid), "model.h5")
 os.makedirs(os.path.join(model_root, str(corrid)), exist_ok=True)
-sz = 2948
+sz = 1024
 
 model = M2UnetInteractiveModel(
     model_dir=model_root,
